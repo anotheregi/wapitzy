@@ -28,7 +28,7 @@
  *                 description: "ID sesi pengirim"
  *               receiver:
  *                 type: string
- *                 example: "6285123456789"
+ *                 example: "628123456789"
  *                 description: "Nomor penerima dengan kode negara"
  *               message:
  *                 type: string
@@ -36,7 +36,7 @@
  *                 description: "Isi pesan atau caption untuk media"
  *               file:
  *                 type: string
- *                 example: "https://example.com/image.jpg"
+ *                 example: "https://egikeren.gg/image.jpg"
  *                 description: "URL publik file media (opsional)"
  *               viewOnce:
  *                 type: boolean
@@ -67,10 +67,10 @@
  *                       example: "6285123456789@s.whatsapp.net"
  *                     message:
  *                       type: string
- *                       example: "Hello World!"
+ *                       example: "hi dek, ini egi"
  *                     file:
  *                       type: string
- *                       example: "https://example.com/image.jpg"
+ *                       example: "https://moreegih.gg/image.jpg"
  *                       nullable: true
  *                     viewOnce:
  *                       type: boolean

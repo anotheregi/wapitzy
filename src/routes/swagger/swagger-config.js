@@ -18,7 +18,7 @@ const options = {
       },
       contact: {
         name: "WhatsApp API",
-        url: "https://github.com/yourusername/whatsapp-api",
+        url: "https://anotheregi.xya",
       },
     },
     servers: [

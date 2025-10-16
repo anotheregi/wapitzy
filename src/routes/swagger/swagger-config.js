@@ -18,7 +18,7 @@ const options = {
       },
       contact: {
         name: "WhatsApp API",
-        url: "https://anotheregi.xya",
+        url: "https://anotheregi.xyz",
       },
     },
     servers: [

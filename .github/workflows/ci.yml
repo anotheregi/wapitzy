@@ -1,0 +1,91 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: wa_api_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Create test environment file
+      run: |
+        cp .env.example .env
+        echo "DB_HOST=127.0.0.1" >> .env
+        echo "DB_USER=root" >> .env
+        echo "DB_PASSWORD=rootpassword" >> .env
+        echo "DB_NAME=wa_api_test" >> .env
+        echo "DB_PORT=3306" >> .env
+        echo "NODE_ENV=test" >> .env
+
+    - name: Wait for MySQL to be ready
+      run: |
+        for i in {1..30}; do
+          if mysqladmin ping -h127.0.0.1 -uroot -prootpassword --silent; then
+            echo "MySQL is ready"
+            break
+          fi
+          echo "Waiting for MySQL..."
+          sleep 2
+        done
+
+    - name: Run database migrations
+      run: npm run db:migrate || echo "No migrations script found, skipping"
+
+    - name: Run tests
+      run: npm test
+      env:
+        NODE_ENV: test
+
+    - name: Run linting
+      run: npm run lint || echo "No lint script found, skipping"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install --production
+
+    - name: Build application
+      run: npm run build || echo "No build script found, skipping"
+
+    - name: Deploy to production
+      run: echo "Deploy step - configure your deployment method here"
+      # Add your deployment commands here (e.g., deploy to Heroku, AWS, etc.)

@@ -1,194 +1,206 @@
-const Joi = require("joi");
-const fs = require("fs");
-const path = require("path");
-const csv = require("csv-parser");
 const { sendResponse } = require("../utils/response");
 const httpStatusCode = require("../constants/httpStatusCode");
 const logger = require("../utils/logger");
-
-// In-memory storage for contact lists (in production, use database)
-let contactLists = new Map();
+const { ContactList } = require("../models");
 
 module.exports = {
   async createContactList(req, res) {
-    const schema = Joi.object({
-      name: Joi.string().required(),
-      description: Joi.string(),
-      contacts: Joi.array().items(Joi.object({
-        name: Joi.string(),
-        phone: Joi.string().required(),
-        tags: Joi.array().items(Joi.string())
-      }))
-    });
+    try {
+      const { name, description, contacts } = req.body;
+      const listId = `list_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const { error } = schema.validate(req.body);
-    if (error) {
+      const contactList = await ContactList.create({
+        id: listId,
+        name,
+        description: description || '',
+        contacts: contacts || [],
+        total_contacts: contacts ? contacts.length : 0
+      });
+
+      logger.info({
+        msg: 'Contact list created',
+        listId,
+        name,
+        totalContacts: contactList.total_contacts
+      });
+
       return sendResponse(
         res,
-        httpStatusCode.BAD_REQUEST,
-        error.details[0].message
+        httpStatusCode.CREATED,
+        "Contact list created successfully",
+        contactList
+      );
+    } catch (error) {
+      logger.error({
+        msg: 'Error creating contact list',
+        error: error.message,
+        stack: error.stack
+      });
+      return sendResponse(
+        res,
+        httpStatusCode.INTERNAL_SERVER_ERROR,
+        "Failed to create contact list",
+        null,
+        error
       );
     }
-
-    const { name, description, contacts } = req.body;
-    const listId = `list_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    const contactList = {
-      id: listId,
-      name,
-      description: description || '',
-      contacts: contacts || [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      total_contacts: contacts ? contacts.length : 0
-    };
-
-    contactLists.set(listId, contactList);
-
-    logger.info({
-      msg: 'Contact list created',
-      listId,
-      name,
-      totalContacts: contactList.total_contacts
-    });
-
-    return sendResponse(
-      res,
-      httpStatusCode.CREATED,
-      "Contact list created successfully",
-      contactList
-    );
   },
 
   async getContactLists(req, res) {
-    const lists = Array.from(contactLists.values()).map(list => ({
-      id: list.id,
-      name: list.name,
-      description: list.description,
-      total_contacts: list.total_contacts,
-      created_at: list.created_at,
-      updated_at: list.updated_at
-    }));
+    try {
+      const lists = await ContactList.findAll({
+        attributes: ['id', 'name', 'description', 'total_contacts', 'created_at', 'updated_at'],
+        order: [['created_at', 'DESC']]
+      });
 
-    return sendResponse(
-      res,
-      httpStatusCode.OK,
-      "Contact lists retrieved successfully",
-      { lists, total: lists.length }
-    );
+      return sendResponse(
+        res,
+        httpStatusCode.OK,
+        "Contact lists retrieved successfully",
+        { lists, total: lists.length }
+      );
+    } catch (error) {
+      logger.error({
+        msg: 'Error retrieving contact lists',
+        error: error.message,
+        stack: error.stack
+      });
+      return sendResponse(
+        res,
+        httpStatusCode.INTERNAL_SERVER_ERROR,
+        "Failed to retrieve contact lists",
+        null,
+        error
+      );
+    }
   },
 
   async getContactList(req, res) {
-    const { listId } = req.params;
-    const list = contactLists.get(listId);
+    try {
+      const { listId } = req.params;
+      const list = await ContactList.findByPk(listId);
 
-    if (!list) {
-      return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
+      if (!list) {
+        return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
+      }
+
+      return sendResponse(
+        res,
+        httpStatusCode.OK,
+        "Contact list retrieved successfully",
+        list
+      );
+    } catch (error) {
+      logger.error({
+        msg: 'Error retrieving contact list',
+        listId: req.params.listId,
+        error: error.message,
+        stack: error.stack
+      });
+      return sendResponse(
+        res,
+        httpStatusCode.INTERNAL_SERVER_ERROR,
+        "Failed to retrieve contact list",
+        null,
+        error
+      );
     }
-
-    return sendResponse(
-      res,
-      httpStatusCode.OK,
-      "Contact list retrieved successfully",
-      list
-    );
   },
 
   async updateContactList(req, res) {
-    const schema = Joi.object({
-      name: Joi.string(),
-      description: Joi.string(),
-      contacts: Joi.array().items(Joi.object({
-        name: Joi.string(),
-        phone: Joi.string().required(),
-        tags: Joi.array().items(Joi.string())
-      }))
-    });
+    try {
+      const { listId } = req.params;
+      const { name, description, contacts } = req.body;
 
-    const { error } = schema.validate(req.body);
-    if (error) {
+      const list = await ContactList.findByPk(listId);
+      if (!list) {
+        return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
+      }
+
+      // Update fields
+      if (name !== undefined) list.name = name;
+      if (description !== undefined) list.description = description;
+      if (contacts !== undefined) {
+        list.contacts = contacts;
+        list.total_contacts = contacts.length;
+      }
+      list.updated_at = new Date();
+
+      await list.save();
+
+      logger.info({
+        msg: 'Contact list updated',
+        listId,
+        name: list.name,
+        totalContacts: list.total_contacts
+      });
+
       return sendResponse(
         res,
-        httpStatusCode.BAD_REQUEST,
-        error.details[0].message
+        httpStatusCode.OK,
+        "Contact list updated successfully",
+        list
+      );
+    } catch (error) {
+      logger.error({
+        msg: 'Error updating contact list',
+        listId: req.params.listId,
+        error: error.message,
+        stack: error.stack
+      });
+      return sendResponse(
+        res,
+        httpStatusCode.INTERNAL_SERVER_ERROR,
+        "Failed to update contact list",
+        null,
+        error
       );
     }
-
-    const { listId } = req.params;
-    const list = contactLists.get(listId);
-
-    if (!list) {
-      return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
-    }
-
-    const { name, description, contacts } = req.body;
-
-    if (name) list.name = name;
-    if (description !== undefined) list.description = description;
-    if (contacts) {
-      list.contacts = contacts;
-      list.total_contacts = contacts.length;
-    }
-
-    list.updated_at = new Date().toISOString();
-
-    logger.info({
-      msg: 'Contact list updated',
-      listId,
-      name: list.name,
-      totalContacts: list.total_contacts
-    });
-
-    return sendResponse(
-      res,
-      httpStatusCode.OK,
-      "Contact list updated successfully",
-      list
-    );
   },
 
   async deleteContactList(req, res) {
-    const { listId } = req.params;
-    const list = contactLists.get(listId);
+    try {
+      const { listId } = req.params;
+      const list = await ContactList.findByPk(listId);
 
-    if (!list) {
-      return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
+      if (!list) {
+        return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
+      }
+
+      await list.destroy();
+
+      logger.info({
+        msg: 'Contact list deleted',
+        listId,
+        name: list.name
+      });
+
+      return sendResponse(
+        res,
+        httpStatusCode.OK,
+        "Contact list deleted successfully"
+      );
+    } catch (error) {
+      logger.error({
+        msg: 'Error deleting contact list',
+        listId: req.params.listId,
+        error: error.message,
+        stack: error.stack
+      });
+      return sendResponse(
+        res,
+        httpStatusCode.INTERNAL_SERVER_ERROR,
+        "Failed to delete contact list",
+        null,
+        error
+      );
     }
-
-    contactLists.delete(listId);
-
-    logger.info({
-      msg: 'Contact list deleted',
-      listId,
-      name: list.name
-    });
-
-    return sendResponse(
-      res,
-      httpStatusCode.OK,
-      "Contact list deleted successfully"
-    );
   },
 
   async importContactsFromCSV(req, res) {
-    const schema = Joi.object({
-      listName: Joi.string().required(),
-      description: Joi.string(),
-      csvUrl: Joi.string().uri().required()
-    });
-
-    const { error } = schema.validate(req.body);
-    if (error) {
-      return sendResponse(
-        res,
-        httpStatusCode.BAD_REQUEST,
-        error.details[0].message
-      );
-    }
-
-    const { listName, description, csvUrl } = req.body;
-
     try {
+      const { listName, description, csvUrl } = req.body;
+
       // Download CSV file
       const response = await fetch(csvUrl);
       if (!response.ok) {
@@ -220,17 +232,13 @@ module.exports = {
 
       // Create contact list
       const listId = `list_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const contactList = {
+      const contactList = await ContactList.create({
         id: listId,
         name: listName,
         description: description || '',
         contacts,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         total_contacts: contacts.length
-      };
-
-      contactLists.set(listId, contactList);
+      });
 
       logger.info({
         msg: 'Contacts imported from CSV',
@@ -264,25 +272,41 @@ module.exports = {
   },
 
   async getContactPhones(req, res) {
-    const { listId } = req.params;
-    const list = contactLists.get(listId);
+    try {
+      const { listId } = req.params;
+      const list = await ContactList.findByPk(listId);
 
-    if (!list) {
-      return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
-    }
-
-    const phones = list.contacts.map(contact => contact.phone);
-
-    return sendResponse(
-      res,
-      httpStatusCode.OK,
-      "Contact phones retrieved successfully",
-      {
-        list_id: listId,
-        list_name: list.name,
-        phones,
-        total: phones.length
+      if (!list) {
+        return sendResponse(res, httpStatusCode.NOT_FOUND, "Contact list not found");
       }
-    );
+
+      const phones = list.contacts.map(contact => contact.phone);
+
+      return sendResponse(
+        res,
+        httpStatusCode.OK,
+        "Contact phones retrieved successfully",
+        {
+          list_id: listId,
+          list_name: list.name,
+          phones,
+          total: phones.length
+        }
+      );
+    } catch (error) {
+      logger.error({
+        msg: 'Error retrieving contact phones',
+        listId: req.params.listId,
+        error: error.message,
+        stack: error.stack
+      });
+      return sendResponse(
+        res,
+        httpStatusCode.INTERNAL_SERVER_ERROR,
+        "Failed to retrieve contact phones",
+        null,
+        error
+      );
+    }
   }
 };

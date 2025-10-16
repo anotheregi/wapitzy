@@ -1,10 +1,10 @@
 const router = require("express").Router();
-const apikeyValidator = require("./../middlewares/apikeyValidator.js");
+const { validateApiKey } = require("./../middlewares/apikeyValidator.js");
 const sessionController = require("../controllers/sessionController.js");
 
-router.get("/:sessionId", apikeyValidator, sessionController.status);
-router.post("/:sessionId", apikeyValidator, sessionController.create);
-router.post("/:sessionId/logout", apikeyValidator, sessionController.logout);
-router.get("/:sessionId/groups", apikeyValidator, sessionController.getGroups);
+router.get("/:sessionId", validateApiKey, sessionController.status);
+router.post("/:sessionId", validateApiKey, sessionController.create);
+router.post("/:sessionId/logout", validateApiKey, sessionController.logout);
+router.get("/:sessionId/groups", validateApiKey, sessionController.getGroups);
 
 module.exports = router;

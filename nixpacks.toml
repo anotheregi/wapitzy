@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "php82", "mysql80"]
+
+[phases.install]
+cmds = [
+  "npm install",
+  "cd app && composer install --no-dev --optimize-autoloader"
+]
+
+[phases.build]
+cmds = [
+  "npm run build 2>/dev/null || echo 'No build script'",
+  "cd app && php -r \"echo 'PHP OK';\""
+]
+
+[start]
+cmd = "npm start"

@@ -1,0 +1,59 @@
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# PHP / Composer
+vendor/
+composer.lock
+
+# CodeIgniter
+app/application/cache/*
+!app/application/cache/index.html
+app/application/logs/*
+!app/application/logs/index.html
+
+# WhatsApp Sessions
+app_node/session/*.json
+
+# Storage
+app/storage/*
+!app/storage/.gitkeep
+
+# Database
+*.sql
+!database.sql
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Railway
+.railway/

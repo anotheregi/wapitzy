@@ -36,4 +36,6 @@ Proyek ini adalah WhatsApp gateway menggunakan Node.js (backend) dan CodeIgniter
 
 ## Troubleshooting
 - Jika build gagal, pastikan `composer.json` dan `package.json` benar.
-- Untuk PHP, Railway menggunakan Nixpacks untuk setup.
+- Untuk PHP, Railway menggunakan Nixpacks untuk setup (sudah include Composer).
+- Jika error "composer: command not found", pastikan `nixpacks.toml` sudah update dengan "composer" di nixPkgs.
+- Cek logs di Railway dashboard untuk detail error.

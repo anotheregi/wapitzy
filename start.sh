@@ -1,4 +1,3 @@
 #!/bin/bash
-php -S 0.0.0.0:$PORT -t . &
 npm start &
-wait
+exec php -S 0.0.0.0:$PORT -t .

@@ -13,7 +13,7 @@ const request = require('request');
 const { smsg } = require('./app_node/lib/myf')
 
 const app = express()
-const host = process.env.HOST || '0.0.0.0'
+const host = '127.0.0.1'
 const port = 3000
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())

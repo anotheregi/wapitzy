@@ -23,7 +23,8 @@ const ser = app.listen(port, host, () => {
 const io = socket(ser);
 
 const db = mysql.createConnection({
-    host: process.env.DB_HOSTNAME,
+    host: process.env.DB_HOSTNAME.split(':')[0],
+    port: process.env.DB_HOSTNAME.split(':')[1] || 3306,
     user: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE

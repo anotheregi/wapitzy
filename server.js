@@ -7,7 +7,7 @@ require('dotenv/config')
 const express = require('express')
 const socket = require("socket.io");
 const { toDataURL } = require('qrcode')
-const mysql = require('mysql');
+const mysql = require('mysql2');
 require('dotenv').config();
 const request = require('request');
 const { smsg } = require('./app_node/lib/myf')

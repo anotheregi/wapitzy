@@ -1,3 +1,4 @@
 #!/bin/bash
 php -S 0.0.0.0:$PORT -t . &
-npm start
+npm start &
+wait

@@ -14,7 +14,7 @@ const { smsg } = require('./app_node/lib/myf')
 
 const app = express()
 const host = process.env.HOST || '0.0.0.0'
-const port = parseInt(process.env.PORT) || 3000
+const port = 3000
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 const ser = app.listen(port, host, () => {
